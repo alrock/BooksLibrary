@@ -11,7 +11,7 @@ class QNetworkAccessManager;
 class GoogleThumbnailLoader : public ThumbnailLoader {
 	Q_OBJECT
 public:
-	GoogleThumbnailLoader(QScriptValue img_links, QObject *parent = 0);
+	GoogleThumbnailLoader(VId vid, QScriptValue img_links, QObject *parent = 0);
 public slots:
 	void load(const QSize &size);
 private slots:
@@ -19,15 +19,15 @@ private slots:
 	void reply_error();
 private:
 	QScriptValue img_links_;
-
 	QNetworkAccessManager *manager_;
-
+	QMap<QUrl, QSize> load_queue_;
 };
 
 class GoogleVolume : public Volume {
+	Q_OBJECT
 public:
-	explicit GoogleVolume(const QString &json);
-	explicit GoogleVolume(QScriptValue root);
+	explicit GoogleVolume(const QString &json, QObject *parent = 0);
+	explicit GoogleVolume(QScriptValue root, QObject *parent = 0);
 
 	QString kind() const;
 	QString google_id() const;

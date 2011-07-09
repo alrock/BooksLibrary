@@ -4,6 +4,7 @@
 #include <QtGui/QMainWindow>
 
 class QLineEdit;
+class ShelfView;
 
 class MainWindow : public QMainWindow
 {
@@ -22,6 +23,7 @@ private slots:
 	void error_token();
 
 	void perform_search();
+	void search_complete();
 private:
 	bool is_auth_complete() const;
 private:
@@ -31,6 +33,7 @@ private:
 	qint32  token_expires_in_;
 
 	QLineEdit *search_edit;
+	ShelfView *view_;
 };
 
 #endif // MAINWINDOW_H

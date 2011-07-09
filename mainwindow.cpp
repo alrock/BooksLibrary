@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "shelfview.h"
 
 #include <QtWebKit/QWebView>
 #include <QtNetwork/QNetworkAccessManager>
@@ -8,13 +9,17 @@
 #include <QtScript/QScriptValueIterator>
 #include <QtGui>
 
+#include <volumerenderer.h>
+
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
 	QWidget *main = new QWidget;
-	QHBoxLayout *top_panel = new QHBoxLayout(main);
+	QVBoxLayout *main_layout = new QVBoxLayout(main);
+	QHBoxLayout *top_panel = new QHBoxLayout;
+	main_layout->addLayout(top_panel);
 
 	QPushButton *login = new QPushButton("Login");
 	search_edit = new QLineEdit;
@@ -22,10 +27,17 @@ MainWindow::MainWindow(QWidget *parent)
 	top_panel->addWidget(login);
 	top_panel->addWidget(search_edit);
 
+	view_ = new ShelfView;
+	main_layout->addWidget(view_);
+
 	setCentralWidget(main);
 
 	connect(login, SIGNAL(clicked()), this, SLOT(authenticate()));
 	connect(search_edit, SIGNAL(returnPressed()), this, SLOT(perform_search()));
+
+//	QPixmap pix("10.png");
+//	VolumeRenderer vr(pix);
+//	vr.result().save("render.png");
 }
 
 void MainWindow::authenticate() {
@@ -123,8 +135,13 @@ bool MainWindow::is_auth_complete() const {
 #include "googlesearchengine.h"
 
 void MainWindow::perform_search() {
-	GoogleSearchEngine *engine = new GoogleSearchEngine(this);
-	engine->search(search_edit->text());
+	GoogleSearchEngine *engine = new GoogleSearchEngine(search_edit->text(), 10, this);
+	connect(engine, SIGNAL(complete()), this, SLOT(search_complete()));
+	engine->next();
+}
+
+void MainWindow::search_complete() {
+	view_->set_shelf(qobject_cast<GoogleSearchEngine*>(sender())->shelf());
 }
 
 MainWindow::~MainWindow()

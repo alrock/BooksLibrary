@@ -4,7 +4,12 @@
 quint32 Volume::id_base_ = 0;
 QList<quint32> Volume::free_id_ = QList<quint32>();
 
-Volume::Volume() : id_(next_id()) {}
+Volume::Volume(QObject *parent)
+	: QObject(parent), id_(next_id()) {}
+
+VId Volume::vid() const {
+	return QString("default:%1").arg(id_);
+}
 
 quint32 Volume::next_id() {
 	if (free_id_.isEmpty())
@@ -18,7 +23,7 @@ void Volume::return_id(quint32 id) {
 }
 
 ThumbnailLoader* Volume::thumbnail(QObject *parent) {
-	return new ThumbnailLoader(parent);
+	return new ThumbnailLoader(vid(), parent);
 }
 
 Volume::~Volume() {

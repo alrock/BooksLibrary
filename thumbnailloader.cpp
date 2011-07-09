@@ -1,10 +1,10 @@
 #include "thumbnailloader.h"
 
-ThumbnailLoader::ThumbnailLoader(QObject *parent) :
-	QObject(parent) {
+ThumbnailLoader::ThumbnailLoader(VId vid, QObject *parent)
+	: QObject(parent), vid_(vid) {
 }
 
+
 void ThumbnailLoader::load(const QSize &size) {
-	thumbnail_ = QPixmap(size);
-	emit complete();
+	emit complete(QPixmap(), size);
 }

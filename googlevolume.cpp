@@ -6,8 +6,8 @@
 
 #include <QDebug>
 
-GoogleThumbnailLoader::GoogleThumbnailLoader(QScriptValue img_links, QObject *parent) :
-	ThumbnailLoader(parent), img_links_(img_links) {
+GoogleThumbnailLoader::GoogleThumbnailLoader(VId vid, QScriptValue img_links, QObject *parent)
+	: ThumbnailLoader(vid, parent), img_links_(img_links) {
 	manager_ = new QNetworkAccessManager(this);
 }
 
@@ -24,35 +24,35 @@ void GoogleThumbnailLoader::load(const QSize &size) {
 		else
 			sz.setWidth(128);
 	}
-	if (sz.width() <= 128) {
+	if (sz.width() > 80 && sz.width() <= 128) {
 		val = img_links_.property("thumbnail");
 		if (val.isString() && !val.toString().isEmpty())
 			req.setUrl(QUrl(val.toString()));
 		else
 			sz.setWidth(300);
 	}
-	if (sz.width() <= 300) {
+	if (sz.width() > 128 && sz.width() <= 300) {
 		val = img_links_.property("small");
 		if (val.isString() && !val.toString().isEmpty())
 			req.setUrl(QUrl(val.toString()));
 		else
 			sz.setWidth(575);
 	}
-	if (sz.width() <= 575) {
+	if (sz.width() > 300 && sz.width() <= 575) {
 		val = img_links_.property("medium");
 		if (val.isString() && !val.toString().isEmpty())
 			req.setUrl(QUrl(val.toString()));
 		else
 			sz.setWidth(800);
 	}
-	if (sz.width() <= 800) {
+	if (sz.width() > 575 && sz.width() <= 800) {
 		val = img_links_.property("large");
 		if (val.isString() && !val.toString().isEmpty())
 			req.setUrl(QUrl(val.toString()));
 		else
 			sz.setWidth(1280);
 	}
-	if (sz.width() <= 1280) {
+	if (sz.width() > 800 && sz.width() <= 1280) {
 		val = img_links_.property("extraLarge");
 		if (val.isString() && !val.toString().isEmpty())
 			req.setUrl(QUrl(val.toString()));
@@ -60,7 +60,15 @@ void GoogleThumbnailLoader::load(const QSize &size) {
 			ThumbnailLoader::load(size);
 	}
 
+	QPixmap *from_cache = 0;
+	if (QPixmapCache::find(thumbnail_key(vid_, sz), from_cache)) {
+		qDebug() << "Load thumbnail from cache";
+		emit complete(*from_cache, size);
+		return;
+	}
+
 	if (!req.url().isEmpty()) {
+		load_queue_.insert(req.url(), sz);
 		QNetworkReply *reply = manager_->get(req);
 
 		connect(reply, SIGNAL(finished()), this, SLOT(reply_finished()));
@@ -69,7 +77,6 @@ void GoogleThumbnailLoader::load(const QSize &size) {
 }
 
 void GoogleThumbnailLoader::reply_finished() {
-	static int c = 0;
 	QNetworkReply *reply = qobject_cast<QNetworkReply*>(sender());
 
 	if (reply) {
@@ -77,12 +84,19 @@ void GoogleThumbnailLoader::reply_finished() {
 
 		qDebug() << "Google Thumbnail reply finished. Size:" << data.size();
 
+		QPixmap pixmap;
+		pixmap.loadFromData(data);
+
+		if (load_queue_.contains(reply->request().url())) {
+			QSize size = load_queue_[reply->request().url()];
+			load_queue_.remove(reply->request().url());
+			QPixmapCache::insert(thumbnail_key(vid_, size), pixmap);
+			emit complete(pixmap, size);
+		} else
+			emit complete(pixmap, QSize());
+
 		reply->deleteLater();
 
-		thumbnail_.loadFromData(data);
-
-		thumbnail_.save(QString("%1.png").arg(++c));
-		emit complete();
 	}
 }
 
@@ -96,13 +110,14 @@ void GoogleThumbnailLoader::reply_error() {
 
 //--------------------------------------------------------------------------------------------------
 
-GoogleVolume::GoogleVolume(const QString &json) :
-	data_(json) {
+GoogleVolume::GoogleVolume(const QString &json, QObject *parent)
+	: Volume(parent), data_(json) {
 	svalue_ = QScriptEngine().evaluate(data_);
 	volume_info_ = svalue_.property("volumeInfo");
 }
 
-GoogleVolume::GoogleVolume(QScriptValue root) {
+GoogleVolume::GoogleVolume(QScriptValue root, QObject *parent)
+	: Volume(parent) {
 	svalue_ = root;
 	volume_info_ = svalue_.property("volumeInfo");
 }
@@ -139,5 +154,5 @@ QStringList GoogleVolume::authors() const {
 }
 
 ThumbnailLoader* GoogleVolume::thumbnail(QObject *parent) {
-	return new GoogleThumbnailLoader(volume_info_.property("imageLinks"), parent);
+	return new GoogleThumbnailLoader(vid(), volume_info_.property("imageLinks"), parent);
 }

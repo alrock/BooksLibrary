@@ -4,13 +4,18 @@
 #include <QList>
 #include <QStringList>
 
+typedef QString VId;
+
 class ThumbnailLoader;
 
-class Volume {
+class Volume : public QObject {
+	Q_OBJECT
 public:
-	Volume();
+	explicit Volume(QObject *parent = 0);
 
 	quint32 id() const;
+
+	virtual VId vid() const;
 
 	virtual QString title() const = 0;
 	virtual QString description() const = 0;
