@@ -2,22 +2,26 @@
 
 #include <QLinearGradient>
 
-QColor dominant_color(const QPixmap &pix, quint8 quality = 5) {
+#include <QDebug>
+
+QColor dominant_color(const QPixmap &pix, quint8 quality = 10) {
 	QImage img(pix.toImage());
 	int size = img.size().height()*img.size().width();
-	int step = qMax(size*5/100, 1);
+	int step = qMax(size*quality/100, 1);
 
 	int r = 0, g = 0, b = 0, i = 0, count = 0;
-	for (; i < size; i+=step) {
-		QRgb color = img.pixel(i%img.width(), i/img.height());
+	for (; i < (size-step); i+=step) {
+		QRgb color = img.pixel(i%img.width(), i/img.width());
 		r += qRed(color);
 		g += qGreen(color);
 		b += qBlue(color);
 		++count;
 	}
-	r /= count;
-	g /= count;
-	b /= count;
+	if (count) {
+		r /= count;
+		g /= count;
+		b /= count;
+	}
 	return QColor::fromRgb(r,g,b);
 }
 
@@ -51,14 +55,15 @@ void VolumeRenderer::create_canvas() {
 
 	snipe_width_ = 16;
 	canvas_ = QPixmap(snipe_width_ + thumbnail_.width() + 1, total_height_);
+	canvas_.fill(Qt::transparent);
 	painter_ = new QPainter(&canvas_);
 
 	dominant_ = dominant_color(thumbnail_);
 }
 
 void VolumeRenderer::render_thumbnail() {
-	painter_->fillRect(canvas_.rect(), Qt::white);
-	painter_->setPen(dominant_);
+
+	painter_->setPen(darker(dominant_, 0.3));
 	painter_->drawRect(size_to_rect(thumbnail_size_, snipe_width_, 0));
 	painter_->drawPixmap(snipe_width_, 1, thumbnail_);
 
@@ -92,7 +97,7 @@ void VolumeRenderer::render_snipe() {
 }
 
 void VolumeRenderer::render_pages() {
-	painter_->setPen(dominant_);
+	painter_->setPen(darker(dominant_, 0.3));
 	painter_->drawLine(0, canvas_.height()-1, canvas_.width(), canvas_.height()-1);
 	QColor bc = darker(dominant_, 0.8);
 	bc.setAlpha(240);

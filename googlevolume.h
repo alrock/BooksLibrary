@@ -11,7 +11,7 @@ class QNetworkAccessManager;
 class GoogleThumbnailLoader : public ThumbnailLoader {
 	Q_OBJECT
 public:
-	GoogleThumbnailLoader(VId vid, QScriptValue img_links, QObject *parent = 0);
+	GoogleThumbnailLoader(Volume *volume, QScriptValue img_links);
 public slots:
 	void load(const QSize &size);
 private slots:

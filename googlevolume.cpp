@@ -6,8 +6,8 @@
 
 #include <QDebug>
 
-GoogleThumbnailLoader::GoogleThumbnailLoader(VId vid, QScriptValue img_links, QObject *parent)
-	: ThumbnailLoader(vid, parent), img_links_(img_links) {
+GoogleThumbnailLoader::GoogleThumbnailLoader(Volume *volume, QScriptValue img_links)
+	: ThumbnailLoader(volume), img_links_(img_links) {
 	manager_ = new QNetworkAccessManager(this);
 }
 
@@ -61,7 +61,7 @@ void GoogleThumbnailLoader::load(const QSize &size) {
 	}
 
 	QPixmap *from_cache = 0;
-	if (QPixmapCache::find(thumbnail_key(vid_, sz), from_cache)) {
+	if (QPixmapCache::find(thumbnail_key(volume_->vid(), sz), from_cache)) {
 		qDebug() << "Load thumbnail from cache";
 		emit complete(*from_cache, size);
 		return;
@@ -90,7 +90,7 @@ void GoogleThumbnailLoader::reply_finished() {
 		if (load_queue_.contains(reply->request().url())) {
 			QSize size = load_queue_[reply->request().url()];
 			load_queue_.remove(reply->request().url());
-			QPixmapCache::insert(thumbnail_key(vid_, size), pixmap);
+			QPixmapCache::insert(thumbnail_key(volume_->vid(), size), pixmap);
 			emit complete(pixmap, size);
 		} else
 			emit complete(pixmap, QSize());
@@ -154,5 +154,5 @@ QStringList GoogleVolume::authors() const {
 }
 
 ThumbnailLoader* GoogleVolume::thumbnail(QObject *parent) {
-	return new GoogleThumbnailLoader(vid(), volume_info_.property("imageLinks"), parent);
+	return new GoogleThumbnailLoader(this, volume_info_.property("imageLinks"));
 }

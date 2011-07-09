@@ -23,7 +23,7 @@ void Volume::return_id(quint32 id) {
 }
 
 ThumbnailLoader* Volume::thumbnail(QObject *parent) {
-	return new ThumbnailLoader(vid(), parent);
+	return new ThumbnailLoader(this);
 }
 
 Volume::~Volume() {

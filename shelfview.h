@@ -2,25 +2,24 @@
 #define SHELFVIEW_H
 
 #include <QWidget>
-#include <QGraphicsItem>
+#include <QGraphicsPixmapItem>
 #include <QSharedPointer>
 #include <QHash>
 
 #include "volume.h"
 
 class QGraphicsView;
-class QGraphicsPixmapItem;
 class QGraphicsTextItem;
 class Volume;
 class Shelf;
 
 
-class VolumeView : public QObject, public QGraphicsItem {
+class VolumeView : public QObject, public QGraphicsPixmapItem {
 	Q_OBJECT
 public:
 	explicit VolumeView(Volume *vol, QGraphicsItem *parent = 0);
-	QRectF boundingRect() const { return QRectF(0, 0, 132, 204); }
-	void paint(QPainter *p, const QStyleOptionGraphicsItem*, QWidget*);
+	//QRectF boundingRect() const { return QRectF(0, 0, 132, 204); }
+	//void paint(QPainter *p, const QStyleOptionGraphicsItem*, QWidget*);
 private slots:
 	void set_thumbnail(QPixmap,QSize);
 private:

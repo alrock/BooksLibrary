@@ -14,15 +14,15 @@ inline QString thumbnail_key(VId vid, QSize size) {
 class ThumbnailLoader : public QObject {
     Q_OBJECT
 public:
-	explicit ThumbnailLoader(VId vid, QObject *parent = 0);
+	explicit ThumbnailLoader(Volume *volume);
 
-	VId vid() const { return vid_; }
+	VId vid() const { return volume_->vid(); }
 public slots:
 	virtual void load(const QSize &size);
 signals:
 	void complete(QPixmap, QSize);
 protected:
-	VId vid_;
+	Volume *volume_;
 };
 
 #endif // THUMBNAILLOADER_H

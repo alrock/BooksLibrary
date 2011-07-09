@@ -5,25 +5,25 @@
 
 #include <QVBoxLayout>
 #include <QGraphicsView>
-#include <QGraphicsPixmapItem>
-#include <QGraphicsTextItem>
+#include <QGraphicsDropShadowEffect>
 
 #include <QDebug>
 
 VolumeView::VolumeView(Volume *vol, QGraphicsItem *parent)
-	: QGraphicsItem(parent), volume_(vol) {
+	: QGraphicsPixmapItem(parent), volume_(vol) {
 	setFlag(QGraphicsItem::ItemIsMovable);
-	//setFlag(QGraphicsItem::ItemClipsChildrenToShape);
-	//label_ = new QGraphicsTextItem(volume_->title(), this);
-	//label_->setZValue(10);
-	thumbnail_ = new QGraphicsPixmapItem(this);
-	thumbnail_->setZValue(5);
+	setFlag(QGraphicsItem::ItemClipsChildrenToShape);
+
 	ThumbnailLoader *loader = volume_->thumbnail(this);
 	connect(loader, SIGNAL(complete(QPixmap,QSize)), this, SLOT(set_thumbnail(QPixmap,QSize)));
 	loader->load(QSize(128,128));
 
-	thumbnail_->setPos(2, 2);
-	//label_->setPos(0, 180);
+	QGraphicsDropShadowEffect *shadow = new QGraphicsDropShadowEffect(this);
+	shadow->setColor(Qt::black);
+	shadow->setBlurRadius(15.0);
+	shadow->setOffset(0, 0);
+
+	setGraphicsEffect(shadow);
 }
 
 void VolumeView::set_thumbnail(QPixmap pixmap, QSize) {
@@ -32,21 +32,8 @@ void VolumeView::set_thumbnail(QPixmap pixmap, QSize) {
 		pixmap = pixmap.scaled(QSize(128, 128*1.41), Qt::KeepAspectRatio,
 					 Qt::SmoothTransformation);
 		VolumeRenderer renderer(pixmap);
-		thumbnail_->setPixmap(renderer.result());
-		renderer.result().save("hello.png");
-
-		double dx = double(128-pixmap.width())/2.0;
-		double dy = double(128*1.41-pixmap.height())/2.0;
-
-		thumbnail_->setOffset((dx > 0)? dx : 0, (dy > 0)? dy : 0);
-		thumbnail_->update();
+		setPixmap(renderer.result());
 	}
-}
-
-void VolumeView::paint(QPainter *p, const QStyleOptionGraphicsItem*, QWidget*) {
-	//p->drawRect(0, 0, 132, 204);
-	//thumbnail_->update();
-	//label_->update();
 }
 
 ShelfView::ShelfView(QWidget *parent)
@@ -105,11 +92,37 @@ void ShelfView::resizeEvent(QResizeEvent *) {
 
 void ShelfView::update_view() {
 	if (!shelf_.isNull()) {
-		int count = width()/(150+2);
-		int i = 0;
+		int w = 0;
+		int h = 0, hh = 0;
+		QList<VolumeView*> lst;
 		foreach (VolumeView *v, items_.values()) {
-			v->setPos((i%count)*(150+2), (i/count)*206);
-			++i;
+			if ((w + v->boundingRect().width() + 8) < width()) {
+				w += v->boundingRect().width() + 8;
+				lst.append(v);
+				hh = (hh < v->boundingRect().height()) ? v->boundingRect().height() : hh;
+			} else {
+				h += hh+8;
+				qDebug() << "new line" << h;
+				hh = 0;
+				int step = 8;
+				foreach (VolumeView *vv, lst) {
+					vv->setPos(step, h - vv->boundingRect().height());
+					step += vv->boundingRect().width() + 8;
+				}
+				lst.clear();
+				lst.append(v);
+				w = v->boundingRect().width() + 8;
+			}
 		}
+		h += hh + 8;
+		qDebug() << "new line" << h;
+		hh = 0;
+		int step = 8;
+		foreach (VolumeView *vv, lst) {
+			vv->setPos(step, h - vv->boundingRect().height());
+			step += vv->boundingRect().width() + 8;
+		}
+		lst.clear();
+		w = 0;
 	}
 }
